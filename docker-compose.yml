@@ -1,0 +1,125 @@
+# =============================================================================
+# Smart Parking - Docker Compose Configuration
+# =============================================================================
+# This file defines all services needed to run the Smart Parking application.
+# Run with: docker-compose up --build
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # Stores all persistent data: users, parking spots, reservations, etc.
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16
+    restart: on-failure
+    container_name: postgres-smp-db
+    environment:
+      POSTGRES_USER: postgres_local
+      POSTGRES_PASSWORD: MyStrongPassw0rd!
+      POSTGRES_DB: sm_parking
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./ops/ps-init.sql:/docker-entrypoint-initdb.d/ps-init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres_local -d sm_parking" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache
+  # Used for caching parking spot data to reduce database load.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    restart: on-failure
+    volumes:
+      - ./redis_data:/data
+
+  # ---------------------------------------------------------------------------
+  # Redis Insight (Optional)
+  # Web UI for monitoring Redis cache. Access at http://localhost:5540
+  # ---------------------------------------------------------------------------
+  redisInsight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    restart: on-failure
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    volumes:
+      - ./redisinsight_data:/data
+
+  # ---------------------------------------------------------------------------
+  # Mosquitto MQTT Broker
+  # Handles real-time parking sensor messages. Sensors publish spot status
+  # updates here, and the backend subscribes to receive them.
+  # ---------------------------------------------------------------------------
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+
+  # ---------------------------------------------------------------------------
+  # Backend API (FastAPI)
+  # Python backend that provides REST API and WebSocket endpoints.
+  # Waits for database to be healthy before starting.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-parking-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres_local:MyStrongPassw0rd!@db:5432/sm_parking
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    volumes:
+      - ./backend:/app
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Frontend (React + Vite)
+  # Web application served at http://localhost:5173
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart-parking-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: on-failure

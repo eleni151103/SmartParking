@@ -1,0 +1,11 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+paho-mqtt==1.6.1
+sqlalchemy[asyncpg]==2.0.23
+asyncpg==0.29.0  # Add this to explicitly install the async PostgreSQL driver
+alembic==1.13.0
+python-dotenv==1.0.0
+bcrypt==4.0.1  # For password hashing in user_service
+redis==5.0.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4

@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Map container fixes (Leaflet default icons etc.) */
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+}
