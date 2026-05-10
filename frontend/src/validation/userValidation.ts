@@ -84,11 +84,8 @@ export const validateName = (name: string, fieldName: string): ValidationResult 
 export const validateLoginForm = (email: string, password: string): ValidationResult => {
   const errors: string[] = [];
 
-  const emailValidation = validateEmail(email);
-  const passwordValidation = validatePassword(password);
-
-
-  errors.push(...emailValidation.errors, ...passwordValidation.errors);
+  if (!email) errors.push('Email is required');
+  if (!password) errors.push('Password is required');
 
   return {
     isValid: errors.length === 0,

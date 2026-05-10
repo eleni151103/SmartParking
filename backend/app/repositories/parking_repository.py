@@ -60,7 +60,11 @@ class ParkingRepository:
 
     async def get_all_spots(self) -> List[ParkingSpot]:
         res = await self.db.execute(select(ParkingSpot))
-        return res.scalars().all()
+        spots = res.scalars().all()
+        paid_map = await self._get_paid_prices_map()
+        for spot in spots:
+            spot.price_per_hour = paid_map.get(spot.id)
+        return spots
 
     async def get_spot_by_id(self, spot_id: int) -> Optional[ParkingSpot]:
         return await self.db.get(ParkingSpot, spot_id)
@@ -127,18 +131,36 @@ class ParkingRepository:
         if not spot:
             return None
 
+        price_per_hour = updates.pop("price_per_hour", None)
+
         for k, v in updates.items():
             if v is not None:
                 setattr(spot, k, v)
 
         await self.db.commit()
+
+        if price_per_hour is not None and price_per_hour > 0:
+            await self.upsert_paid_price(spot_id, price_per_hour)
+            spot.price_per_hour = price_per_hour
+        elif price_per_hour == 0:
+            await self.remove_paid_price(spot_id)
+            spot.price_per_hour = None
+
         return spot
 
     async def delete_spot(self, spot_id: int) -> Optional[ParkingSpot]:
         spot = await self.db.get(ParkingSpot, spot_id)
         if spot:
+            old_status = spot.status
             await self.db.delete(spot)
             await self.db.commit()
+            try:
+                await redis_client.delete(f"spot:{spot_id}")
+                await redis_client.srem(f"spots:by_status:{old_status}", spot_id)
+                await redis_client.zrem(f"spots:geo:{old_status}", f"spot_{spot_id}")
+                await redis_client.srem("spots:paid", spot_id)
+            except Exception as e:
+                logger.error(f"Redis cleanup failed after delete of spot {spot_id}: {e}")
         return spot
 
     async def get_spots_in_viewport(

@@ -24,13 +24,13 @@ class ParkingSpot(Base):
 
     last_updated = Column(DateTime(timezone=False), server_default=func.now())
 
-    paid_info = relationship("PaidParking", uselist=False, back_populates="spot")
+    paid_info = relationship("PaidParking", uselist=False, back_populates="spot", passive_deletes=True)
 
-    status_logs = relationship("SpotStatusLog", back_populates="spot")
+    status_logs = relationship("SpotStatusLog", back_populates="spot", passive_deletes=True)
 
-    favorites = relationship("UserFavorites", back_populates="spot")
+    favorites = relationship("UserFavorites", back_populates="spot", passive_deletes=True)
 
-    reservations = relationship("Reservation", back_populates="spot")
+    reservations = relationship("Reservation", back_populates="spot", passive_deletes=True)
 
 
 class SpotStatusLog(Base):

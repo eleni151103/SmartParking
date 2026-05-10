@@ -66,7 +66,9 @@ async def get_all_spots(
     spots = await service.get_all_spots()
     return [ParkingSpotResponse(
         id=s.id, latitude=s.latitude, longitude=s.longitude, location=s.location,
-        status=s.status, last_updated=s.last_updated.isoformat() if s.last_updated else None
+        status=s.status, last_updated=s.last_updated.isoformat() if s.last_updated else None,
+        city=s.city, area=s.area,
+        price_per_hour=float(s.price_per_hour) if s.price_per_hour is not None else None,
     ) for s in spots]
 
 

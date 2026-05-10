@@ -33,10 +33,11 @@ const SpotForm: React.FC<{
         price_per_hour: 0,
     });
 
+    const [isPaid, setIsPaid] = useState(false);
 
     useEffect(() => {
         if (initialData) {
-
+            const price = initialData.price_per_hour ?? 0;
             setFormData({
                 location: initialData.location,
                 latitude: initialData.latitude,
@@ -44,8 +45,9 @@ const SpotForm: React.FC<{
                 status: initialData.status,
                 city: initialData.city || '',
                 area: initialData.area || '',
-                price_per_hour: initialData.price_per_hour || 0,
+                price_per_hour: price,
             });
+            setIsPaid(price > 0);
         }
     }, [initialData]);
 
@@ -142,12 +144,12 @@ const SpotForm: React.FC<{
                     <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <input
                             type="checkbox"
-                            checked={!!formData.price_per_hour && formData.price_per_hour > 0}
+                            checked={isPaid}
                             onChange={(e) => {
-
+                                setIsPaid(e.target.checked);
                                 setFormData(prev => ({
                                     ...prev,
-                                    price_per_hour: e.target.checked ? 1.0 : 0
+                                    price_per_hour: e.target.checked ? (prev.price_per_hour || 1.0) : 0
                                 }));
                             }}
                             className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
@@ -156,7 +158,7 @@ const SpotForm: React.FC<{
                     </label>
 
                     {}
-                    {formData.price_per_hour !== undefined && formData.price_per_hour > 0 && (
+                    {isPaid && (
                         <div>
                             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Price/Hr (€)</label>
                             <input

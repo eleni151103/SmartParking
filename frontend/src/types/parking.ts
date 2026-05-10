@@ -24,6 +24,7 @@ export type ParkingSpot = {
     status: ParkingStatus;
     last_updated?: string;
     price_per_hour?: number | null;
+    pricePerHour?: number | null;
 };
 
 
@@ -72,7 +73,10 @@ export function isAvailable(spot: ParkingSpot): boolean {
 }
 
 
-export const isPaid = (s: ParkingSpot) => (s.price_per_hour ?? null) !== null && s.price_per_hour !== undefined;
+export const isPaid = (s: ParkingSpot) => {
+    const price = s.pricePerHour ?? s.price_per_hour ?? null;
+    return price !== null && price !== undefined;
+};
 
 
 export const isFree = (s: ParkingSpot) => !isPaid(s);
