@@ -1,15 +1,5 @@
-# =============================================================================
-# Smart Parking - Docker Compose Configuration
-# =============================================================================
-# This file defines all services needed to run the Smart Parking application.
-# Run with: docker-compose up --build
-# =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # PostgreSQL Database
-  # Stores all persistent data: users, parking spots, reservations, etc.
-  # ---------------------------------------------------------------------------
   db:
     image: postgres:16
     restart: on-failure
@@ -28,10 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # Redis Cache
-  # Used for caching parking spot data to reduce database load.
-  # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: redis-cache
@@ -41,10 +27,6 @@ services:
     volumes:
       - ./redis_data:/data
 
-  # ---------------------------------------------------------------------------
-  # Redis Insight (Optional)
-  # Web UI for monitoring Redis cache. Access at http://localhost:5540
-  # ---------------------------------------------------------------------------
   redisInsight:
     image: redis/redisinsight:latest
     container_name: redis-insight
@@ -56,11 +38,6 @@ services:
     volumes:
       - ./redisinsight_data:/data
 
-  # ---------------------------------------------------------------------------
-  # Mosquitto MQTT Broker
-  # Handles real-time parking sensor messages. Sensors publish spot status
-  # updates here, and the backend subscribes to receive them.
-  # ---------------------------------------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: mqtt-broker
@@ -74,11 +51,6 @@ services:
       options:
         max-size: "10m"
 
-  # ---------------------------------------------------------------------------
-  # Backend API (FastAPI)
-  # Python backend that provides REST API and WebSocket endpoints.
-  # Waits for database to be healthy before starting.
-  # ---------------------------------------------------------------------------
   backend:
     build:
       context: ./backend
@@ -104,10 +76,6 @@ services:
       - ./backend:/app
     restart: on-failure
 
-  # ---------------------------------------------------------------------------
-  # Frontend (React + Vite)
-  # Web application served at http://localhost:5173
-  # ---------------------------------------------------------------------------
   frontend:
     build:
       context: ./frontend

@@ -1,8 +1,3 @@
-"""
-user_favorites_service.py - User Favorites Business Logic
-
-Manages user's favorite parking spots.
-"""
 
 from app.repositories.user_favorites_repository import UserFavoritesRepository
 
@@ -14,7 +9,6 @@ class UserFavoritesService:
         return await self.repo.get_user_favorites(user_id)
 
     async def add_favorite(self, user_id: int, spot_id: int):
-        # Check if favorite already exists
         existing = await self.repo.get_favorite(user_id, spot_id)
         if existing:
             raise ValueError("Favorite already exists")

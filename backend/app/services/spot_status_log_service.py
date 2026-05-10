@@ -1,9 +1,3 @@
-"""
-spot_status_log_service.py - Status Log Business Logic
-
-Manages historical status change records for parking spots.
-Used for analytics and debugging sensor data.
-"""
 
 from app.repositories.spot_status_log_repository import SpotStatusLogRepository
 

@@ -1,8 +1,3 @@
-"""
-user_favorites_repository.py - User Favorites Data Access Layer
-
-Handles database operations for user's favorite parking spots.
-"""
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

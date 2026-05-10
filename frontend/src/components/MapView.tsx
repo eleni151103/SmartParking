@@ -1,33 +1,4 @@
-/**
- * =======================================================================
- * MapView.tsx - Διαδραστικός Χάρτης Parking
- * =======================================================================
- *
- * ΤΙ ΚΑΝΕΙ ΑΥΤΟ ΤΟ ΑΡΧΕΙΟ:
- *   Εμφανίζει έναν διαδραστικό χάρτη Leaflet με markers για κάθε
- *   διαθέσιμη θέση parking. Ο χρήστης μπορεί να:
- *   - Δει τις θέσεις χρωματισμένες (πράσινο=δωρεάν, μπλε=επί πληρωμή, χρυσό=αγαπημένο)
- *   - Κάνει κλικ σε marker για popup με λεπτομέρειες
- *   - Κάνει κράτηση ή πλοήγηση
- *   - Δει fly-to animation μετά από αναζήτηση
- *
- * LEAFLET & REACT-LEAFLET:
- *   - Leaflet: βιβλιοθήκη JavaScript για interactive maps
- *   - react-leaflet: React wrapper για το Leaflet
- *   - TileLayer: φορτώνει τα "πλακίδια" του χάρτη (εικόνες)
- *   - Marker: σημείο στον χάρτη με εικονίδιο
- *   - Popup: bubble που εμφανίζεται όταν κλικάρεις Marker
- *
- * ΧΡΩΜΑΤΙΣΜΟΣ MARKERS:
- *   FreeIcon (πράσινο)     = Available + δωρεάν (price_per_hour = null)
- *   DefaultIcon (μπλε)     = Available + επί πληρωμή
- *   FavoriteIcon (χρυσό)   = Αγαπημένο (υπερισχύει χρώματος)
- *   UserIcon (κόκκινο)     = Θέση χρήστη
- *
- * ΣΥΝΕΡΓΑΖΕΤΑΙ ΜΕ:
- *   MainLayout.tsx, FavoritesContext.tsx, useReservation.ts, SearchModal.tsx
- * =======================================================================
- */
+
 
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -40,8 +11,7 @@ import { type SearchResult } from "./SearchModal";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { useReservation } from "../hooks/useReservation";
 
-// --- ΕΙΚΟΝΙΔΙΑ MARKERS ---
-// Επαναφορά default Leaflet icon (λύνει πρόβλημα με webpack bundling)
+
 const DefaultIcon = L.icon({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
     iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -49,10 +19,10 @@ const DefaultIcon = L.icon({
     iconSize: [25, 41],
     iconAnchor: [12, 41],
 });
-// Ορίζουμε το DefaultIcon ως default για όλα τα Markers
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Πράσινο εικονίδιο για δωρεάν θέσεις
+
 const FreeIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -61,7 +31,7 @@ const FreeIcon = L.icon({
     popupAnchor: [1, -34],
 });
 
-// Κόκκινο εικονίδιο για τη θέση του χρήστη
+
 const UserIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -70,7 +40,7 @@ const UserIcon = L.icon({
     popupAnchor: [1, -34],
 });
 
-// Χρυσό εικονίδιο για αγαπημένες θέσεις
+
 const FavoriteIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -79,76 +49,63 @@ const FavoriteIcon = L.icon({
     popupAnchor: [1, -34],
 });
 
-/**
- * FlyTo - Component που κινεί τον χάρτη σε νέο σημείο με animation.
- *
- * ΤΙ ΚΑΝΕΙ: Χρησιμοποιεί map.flyTo() για smooth animation προς τις
- *           συντεταγμένες αποτελέσματος αναζήτησης.
- * useRef: Αποτρέπει επανάληψη animation αν το parent κάνει re-render
- *         πριν τελειώσει η πτήση.
- */
+
 function FlyTo({ center, zoom, onFlyEnd }: { center: LatLngExpression; zoom: number; onFlyEnd: () => void }) {
     const map = useMap();
-    // hasFlownRef: true αφού ξεκινήσει η πτήση (αποτρέπει διπλή εκτέλεση)
+
     const hasFlownRef = useRef(false);
 
     useEffect(() => {
         if (!hasFlownRef.current) {
             hasFlownRef.current = true;
 
-            // Λίστα για cleanup του event listener
+
             const handleMoveEnd = () => {
-                onFlyEnd();  // Ενημερώνουμε τον γονέα ότι τελείωσε η πτήση
-                map.off('moveend', handleMoveEnd);  // Αφαίρεση listener
+                onFlyEnd();
+                map.off('moveend', handleMoveEnd);
             };
 
-            map.on('moveend', handleMoveEnd);  // Ακούμε για το τέλος κίνησης
+            map.on('moveend', handleMoveEnd);
             map.flyTo(center, zoom, {
                 animate: true,
-                duration: 1.5,  // 1.5 δευτερόλεπτα animation
+                duration: 1.5,
             });
 
-            // Cleanup αν το component αφαιρεθεί κατά τη διάρκεια πτήσης
+
             return () => {
                 map.off('moveend', handleMoveEnd);
             };
         }
     }, [center, zoom, map, onFlyEnd]);
 
-    return null;  // Δεν αποδίδει HTML
+    return null;
 }
 
-// --- TILE LAYERS (εικόνες χάρτη) ---
+
 const LIGHT_TILES = {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "&copy; OpenStreetMap contributors",
 };
 
-// Σκοτεινός χάρτης από CartoDB για dark mode
+
 const DARK_TILES = {
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attribution">CARTO</a>',
     subdomains: ["a", "b", "c", "d"] as const,
 };
 
-/** Bounds - Γεωγραφικά όρια ορατού χάρτη */
+
 export type Bounds = {
-    swLat: number;  // Νότιο γεωγραφικό πλάτος (κάτω)
-    swLng: number;  // Δυτικό γεωγραφικό μήκος (αριστερά)
-    neLat: number;  // Βόρειο γεωγραφικό πλάτος (πάνω)
-    neLng: number;  // Ανατολικό γεωγραφικό μήκος (δεξιά)
+    swLat: number;
+    swLng: number;
+    neLat: number;
+    neLng: number;
 };
 
-/**
- * UseBounds - Component που παρακολουθεί τις κινήσεις του χάρτη.
- *
- * ΤΙ ΚΑΝΕΙ: Κάθε φορά που ο χρήστης κουνά ή ζουμάρει τον χάρτη,
- *           διαβάζει τα νέα bounds και καλεί onBounds() για να
- *           ενημερωθεί το MainLayout (→ νέο API request).
- */
+
 function UseBounds({ onBounds }: { onBounds: (b: Bounds) => void }) {
     const map = useMapEvents({
-        // moveend: τρέχει μόλις σταματήσει η κίνηση (όχι κάθε frame)
+
         moveend() {
             const b = map.getBounds();
             onBounds({
@@ -160,7 +117,7 @@ function UseBounds({ onBounds }: { onBounds: (b: Bounds) => void }) {
         },
     });
 
-    // Αρχικά bounds (μόλις φορτώσει ο χάρτης)
+
     useEffect(() => {
         map.whenReady(() => {
             const b = map.getBounds();
@@ -176,34 +133,31 @@ function UseBounds({ onBounds }: { onBounds: (b: Bounds) => void }) {
     return null;
 }
 
-/**
- * MapControls - Custom κουμπιά zoom και locate.
- * Χρησιμοποιούμε αυτά αντί των default Leaflet controls για custom styling.
- */
+
 function MapControls() {
     const map = useMap();
 
     return (
         <div className="absolute right-4 bottom-4 z-[1000] flex flex-col gap-2">
-            {/* Κουμπί zoom in */}
+            {}
             <button className="bg-white rounded shadow p-2" onClick={() => map.zoomIn()} aria-label="Zoom in">+</button>
-            {/* Κουμπί zoom out */}
+            {}
             <button className="bg-white rounded shadow p-2" onClick={() => map.zoomOut()} aria-label="Zoom out">−</button>
-            {/* Κουμπί εντοπισμού θέσης χρήστη */}
+            {}
             <button className="bg-white rounded shadow p-2" onClick={() => map.locate({ setView: true, maxZoom: 16 })} aria-label="Locate">📍</button>
         </div>
     );
 }
 
 type Props = {
-    userCoords?: { lat: number; lng: number };  // Θέση χρήστη
-    spots: ParkingSpot[];                        // Όλες οι θέσεις
-    onBounds: (b: Bounds) => void;              // Callback για bounds
-    isDark?: boolean;                            // Dark mode
-    selectedTab: Tab;                            // Φίλτρο All/Free/Paid
-    isAuthenticated?: boolean;                   // Αν είναι logged in
-    searchResult?: SearchResult | null;          // Αποτέλεσμα αναζήτησης
-    onSearchResultHandled: () => void;           // Callback αφού γίνει fly-to
+    userCoords?: { lat: number; lng: number };
+    spots: ParkingSpot[];
+    onBounds: (b: Bounds) => void;
+    isDark?: boolean;
+    selectedTab: Tab;
+    isAuthenticated?: boolean;
+    searchResult?: SearchResult | null;
+    onSearchResultHandled: () => void;
 };
 
 export default function MapView({
@@ -216,29 +170,25 @@ export default function MapView({
     searchResult,
     onSearchResultHandled,
 }: Props) {
-    // Κέντρο χάρτη: θέση χρήστη ή default Αθήνα
+
     const center: LatLngExpression = userCoords ? [userCoords.lat, userCoords.lng] : [37.9838, 23.7275];
 
-    // Επιλογή tile layer βάσει theme
+
     const tiles = isDark ? DARK_TILES : LIGHT_TILES;
 
     const { isFavorite, addFavorite, removeFavorite } = useFavorites();
 
-    // Φιλτράρισμα markers βάσει selectedTab
-    // useMemo: δεν ξαναυπολογίζεται αν δεν αλλάξουν spots/selectedTab
+
     const markers = useMemo(() => {
-        const avail = spots.filter(isAvailable);  // Μόνο Available
+        const avail = spots.filter(isAvailable);
         if (selectedTab === "free") return avail.filter((s) => s.pricePerHour == null);
         if (selectedTab === "paid") return avail.filter((s) => s.pricePerHour != null);
-        return avail;  // "all" = όλες οι available
+        return avail;
     }, [spots, selectedTab]);
 
     const { handleReserve } = useReservation();
 
-    /**
-     * toggleFavorite - Εναλλάσσει αγαπημένο για ένα spot.
-     * useCallback: αποθηκεύει τη συνάρτηση (αποτρέπει re-render markers)
-     */
+
     const toggleFavorite = useCallback(async (spot: ParkingSpot) => {
         if (isFavorite(spot.id)) {
             await removeFavorite(spot.id);
@@ -249,64 +199,64 @@ export default function MapView({
 
     return (
         <div className="h-full w-full relative">
-            {/* MapContainer: το κεντρικό Leaflet component */}
+            {}
             <MapContainer
                 center={center}
-                zoom={13}               // Αρχικό zoom level
-                scrollWheelZoom={true}  // Zoom με scroll του ποντικιού
+                zoom={13}
+                scrollWheelZoom={true}
                 className="h-full w-full"
-                zoomControl={false}     // Απενεργοποιούμε default controls (χρησιμοποιούμε MapControls)
+                zoomControl={false}
             >
-                {/* FlyTo: εμφανίζεται μόνο αν υπάρχει αποτέλεσμα αναζήτησης */}
+                {}
                 {searchResult && (
                     <FlyTo
-                        key={`${searchResult.latitude}-${searchResult.longitude}`}  // Re-mount για κάθε νέο αποτέλεσμα
+                        key={`${searchResult.latitude}-${searchResult.longitude}`}
                         center={[searchResult.latitude, searchResult.longitude]}
                         zoom={searchResult.zoom ?? 16}
                         onFlyEnd={onSearchResultHandled}
                     />
                 )}
 
-                {/* TileLayer: οι εικόνες του χάρτη (OpenStreetMap ή CartoDB) */}
+                {}
                 <TileLayer {...tiles} />
 
-                {/* Παρακολούθηση bounds για νέα API requests */}
+                {}
                 <UseBounds onBounds={onBounds} />
 
-                {/* Custom zoom/locate κουμπιά */}
+                {}
                 <MapControls />
 
-                {/* Marker θέσης χρήστη (κόκκινο) */}
+                {}
                 {userCoords && (
                     <Marker position={[userCoords.lat, userCoords.lng]} icon={UserIcon}>
                         <Popup offset={[0, -16]}>Your location</Popup>
                     </Marker>
                 )}
 
-                {/* Markers θέσεων parking */}
+                {}
                 {markers.map((s) => {
                     const isPaid = s.pricePerHour != null;
                     const isFav = isFavorite(s.id);
-                    // Χρώμα εικονιδίου: χρυσό αν αγαπημένο, αλλιώς βάσει τιμής
+
                     const icon = isFav ? FavoriteIcon : (isPaid ? DefaultIcon : FreeIcon);
 
                     return (
                         <Marker key={s.id} position={[s.latitude, s.longitude]} icon={icon}>
                             <Popup offset={[0, -18]}>
                                 <div className="text-sm">
-                                    {/* Επικεφαλίδα: τοποθεσία + κουμπί αγαπημένου */}
+                                    {}
                                     <div className="flex justify-between items-start">
                                         <div className="font-medium">{s.location}</div>
                                         {isAuthenticated && (
                                             <button
                                                 onClick={(e) => {
-                                                    e.stopPropagation();  // Αποτρέπουμε κλείσιμο popup
+                                                    e.stopPropagation();
                                                     toggleFavorite(s);
                                                 }}
                                                 className="text-yellow-500 hover:text-yellow-600 focus:outline-none ml-2 flex-shrink-0 p-1 relative z-[9999]"
                                                 title={isFav ? "Remove from favorites" : "Add to favorites"}
                                             >
-                                                {/* Γεμιστό αστέρι αν αγαπημένο, κενό αλλιώς */}
+                                                {}
                                                 {isFav ? (
                                                     <svg className="w-6 h-6 fill-current drop-shadow-sm" viewBox="0 0 24 24">
                                                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -320,12 +270,12 @@ export default function MapView({
                                         )}
                                     </div>
 
-                                    {/* Κατάσταση (πράσινο "Available") */}
+                                    {}
                                     <div className="mt-2">
                                         Status: <span className="font-semibold text-green-600">{s.status}</span>
                                     </div>
 
-                                    {/* Τιμή ή "Δωρεάν" */}
+                                    {}
                                     {isPaid ? (
                                         <div className="mt-1">
                                             Price: <span className="font-semibold">€{s.pricePerHour!.toFixed(2)}/hr</span>
@@ -336,7 +286,7 @@ export default function MapView({
                                         </div>
                                     )}
 
-                                    {/* Κουμπιά Reserve + Navigate (μόνο αν logged in) */}
+                                    {}
                                     {isAuthenticated && (
                                         <div className="mt-3 grid grid-cols-2 gap-2">
                                             <button
@@ -348,7 +298,7 @@ export default function MapView({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // Άνοιγμα Google Maps πλοήγησης σε νέα καρτέλα
+
                                                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${s.latitude},${s.longitude}&travelmode=driving`, '_blank');
                                                 }}
                                                 className="px-3 py-1.5 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors shadow-sm"

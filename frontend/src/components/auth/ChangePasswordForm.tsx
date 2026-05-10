@@ -1,21 +1,4 @@
-/**
- * =======================================================================
- * ChangePasswordForm.tsx - Φόρμα Αλλαγής Κωδικού
- * =======================================================================
- *
- * ΤΙ ΚΑΝΕΙ ΑΥΤΟ ΤΟ ΑΡΧΕΙΟ:
- *   Φόρμα 3 πεδίων για αλλαγή κωδικού: τρέχων, νέος, επαλήθευση νέου.
- *   Εμφανίζει μήνυμα επιτυχίας και κλείνει αυτόματα μετά 2 δευτερόλεπτα.
- *
- * ΕΙΔΙΚΑ ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ:
- *   - successMessage: πράσινο μήνυμα επιτυχίας πριν το κλείσιμο
- *   - Visibility toggles για και τα 3 πεδία κωδικού
- *   - setTimeout για αυτόματο κλείσιμο
- *
- * ΣΥΝΕΡΓΑΖΕΤΑΙ ΜΕ:
- *   Header.tsx ή UserMenu.tsx (ανοίγει αυτή τη φόρμα σε modal)
- * =======================================================================
- */
+
 
 import React, { useState } from 'react';
 import type { ChangePasswordFormData } from '../../types/user';
@@ -24,13 +7,13 @@ import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ChangePasswordFormProps {
-  onClose: () => void;  // Κλείνει το modal
+  onClose: () => void;
 }
 
 export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose }) => {
-  const { user } = useAuth();  // Χρειαζόμαστε το user.id για το API call
+  const { user } = useAuth();
 
-  // Δεδομένα φόρμας
+
   const [formData, setFormData] = useState<ChangePasswordFormData>({
     currentPassword: '',
     newPassword: '',
@@ -40,15 +23,15 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
   const [errors, setErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // successMessage: εμφανίζεται αφού αλλαχτεί ο κωδικός επιτυχώς
+
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Visibility toggles για τα 3 password πεδία
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  /** handleChange - Ενημερώνει πεδίο και καθαρίζει μηνύματα */
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -56,17 +39,17 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
     if (successMessage) setSuccessMessage('');
   };
 
-  /** handleSubmit - Validation + αλλαγή κωδικού + αυτόματο κλείσιμο */
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Έλεγχος authentication
+
     if (!user) {
       setErrors(['You must be logged in to change your password']);
       return;
     }
 
-    // Client validation
+
     const validation = validateChangePasswordForm(
       formData.currentPassword,
       formData.newPassword,
@@ -83,17 +66,16 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
     setSuccessMessage('');
 
     try {
-      // API call: PUT /api/users/{id} με νέο κωδικό
+
       await authService.changePassword(user.id, formData.currentPassword, formData.newPassword);
 
-      // Επιτυχία: εμφάνιση μηνύματος
+
       setSuccessMessage('Password changed successfully!');
 
-      // Επαναφορά φόρμας
+
       setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
-      // Αυτόματο κλείσιμο μετά 2 δευτερόλεπτα
-      // setTimeout: εκτελεί συνάρτηση μετά από Xms
+
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -106,14 +88,14 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Μήνυμα επιτυχίας (πράσινο) */}
+      {}
       {successMessage && (
         <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded">
           <p className="text-sm">{successMessage}</p>
         </div>
       )}
 
-      {/* Μηνύματα σφαλμάτων (κόκκινο) */}
+      {}
       {errors.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
           <ul className="list-disc list-inside space-y-1">
@@ -124,7 +106,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
         </div>
       )}
 
-      {/* Πεδίο τρέχοντος κωδικού */}
+      {}
       <div>
         <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Current Password
@@ -151,7 +133,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
         </div>
       </div>
 
-      {/* Πεδίο νέου κωδικού */}
+      {}
       <div>
         <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           New Password
@@ -181,7 +163,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
         </p>
       </div>
 
-      {/* Πεδίο επαλήθευσης νέου κωδικού */}
+      {}
       <div>
         <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Confirm New Password
@@ -208,7 +190,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose 
         </div>
       </div>
 
-      {/* Κουμπιά Cancel + Change Password */}
+      {}
       <div className="flex gap-3 pt-2">
         <button
           type="button"

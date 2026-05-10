@@ -6,42 +6,34 @@ import sys
 import os
 import paho.mqtt.client as mqtt
 
-# ---------- CONFIG ----------
 BROKER_HOST = os.getenv("MQTT_HOST", "localhost")
 BROKER_PORT = int(os.getenv("MQTT_PORT", "1883"))
 CITIES: List[str] = ["Athens", "Larissa"]
 SPOT_ID_MIN = 1
 SPOT_ID_MAX = 24
 
-# send 8 random spot updates every INTERVAL_SECONDS
 INTERVAL_SECONDS = 3
 BATCH_SIZE = 3
 
-# Statuses the backend accepts
 STATUSES: List[str] = ["Available", "Occupied", "Reserved", "Maintenance"]
 
-# True => publish {"status":"Occupied"}; False => publish "Occupied"
 USE_JSON_PAYLOAD = False
 
-# QoS / retain options
 QOS = 0
 RETAIN = False
 
 rng = random.Random()
-last_status: Dict[int, str] = {}  # keep last status to prefer changes
+last_status: Dict[int, str] = {}
 
 def choose_new_status(spot_id: int) -> str:
-    """Prefer a different status from the last one to exercise your cache path."""
     prev = last_status.get(spot_id)
     choices = [s for s in STATUSES if s != prev] if prev in STATUSES else STATUSES
-    # Bias toward changing (80% chance)
     if prev in STATUSES and rng.random() < 0.2:
         return prev
     return rng.choice(choices)
 
 def build_payload(status: str) -> str:
     if USE_JSON_PAYLOAD:
-        # The consumer already supports this shape
         return f'{{"status":"{status}"}}'
     return status
 
@@ -55,7 +47,6 @@ def run():
     client = mqtt.Client()
     client.on_connect = on_connect
 
-    # Retry connection with exponential backoff
     max_retries = 10
     retry_delay = 2
     for attempt in range(max_retries):
@@ -69,7 +60,7 @@ def run():
             if attempt < max_retries - 1:
                 print(f"[MQTT] Connection failed: {e}. Retrying in {retry_delay}s...")
                 time.sleep(retry_delay)
-                retry_delay = min(retry_delay * 2, 30)  # Exponential backoff, max 30s
+                retry_delay = min(retry_delay * 2, 30)
             else:
                 print(f"[MQTT] Failed to connect after {max_retries} attempts. Exiting.")
                 sys.exit(1)
@@ -92,7 +83,6 @@ def run():
 
     try:
         while True:
-            # pick unique spot IDs for this batch
             spot_ids = rng.sample(range(SPOT_ID_MIN, SPOT_ID_MAX + 1),
                                   k=min(BATCH_SIZE, SPOT_ID_MAX - SPOT_ID_MIN + 1))
             for spot_id in spot_ids:
@@ -101,7 +91,6 @@ def run():
                 payload = build_payload(status)
                 topic = f"parking/{city}/{spot_id}/status"
 
-                # publish
                 result = client.publish(topic, payload=payload, qos=QOS, retain=RETAIN)
                 if result.rc != mqtt.MQTT_ERR_SUCCESS:
                     print(f"[MQTT] Publish failed rc={result.rc} topic={topic}")
